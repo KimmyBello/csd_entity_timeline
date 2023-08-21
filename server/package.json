@@ -1,0 +1,31 @@
+{
+  "name": "express-vue3-tailwind-map",
+  "version": "1.0.0",
+  "description": "## Project setup",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnkomarnicki/express-vue3-tailwind-map.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/johnkomarnicki/express-vue3-tailwind-map/issues"
+  },
+  "homepage": "https://github.com/johnkomarnicki/express-vue3-tailwind-map#readme",
+  "dependencies": {
+    "@infectoone/vue-ganttastic": "^2.1.4",
+    "axios": "^0.24.0",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
