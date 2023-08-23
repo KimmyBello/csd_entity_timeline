@@ -3,43 +3,41 @@
     <p class="title__page">Activities Timeline</p>
     <div class="grid grid-cols-4 gap-4">
       <div class="col-span-1 container">
-        <!-- <p class="align-text-bottom">นาย ก</p>
-        <span class="align-text-bottom">ข้อมูลส่วนบุคคล</span> -->
+        <p class="align-text-bottom">นาย ก</p>
+        <span class="align-text-bottom">ข้อมูลส่วนบุคคล</span>
       </div>
 
       <div class="col-span-3">
-        <g-gantt-chart
-          chart-start="2021-07-12 12:00"
-          chart-end="2021-07-14 12:00"
-          precision="hour"
-          bar-start="myBeginDate"
-          bar-end="myEndDate"
-        >
-          <g-gantt-row
-            label="My row 1"
-            :bars="row1BarList"
-            @click="handleRowScroll"
-          />
-          <g-gantt-row
-            v-for="bar in row2BarList"
-            :key="bar.ganttBarConfig.id"
-            :label="bar.ganttBarConfig.label"
-            :bars="[bar]"
+        <div class="g-gantt-chart-container">
+          <g-gantt-chart
+            chart-start="2021-07-11 12:00"
+            chart-end="2021-07-20 12:00"
+            precision="day"
+            bar-start="myBeginDate"
+            bar-end="myEndDate"
+            width="100%"
+            :grid="grid"
           >
-            <p>ตำแหน่ง X: {{ bar.myBeginDate }}</p>
-            <p>ตำแหน่ง Y: {{ bar.ganttBarConfig.label }}</p>
-            <g-gantt-timeline>
-              :start="bar.myBeginDate" :end="bar.myEndDate"
+            <g-gantt-row
+              label="My row 1"
+              :bars="scrollingRowConfig"
+              @click="handleScrollingBarClick"
+            />
+
+            <g-gantt-row
+              v-for="activity in transformedData"
+              :key="activity.ganttBarConfig.id"
+              :label="activity.ganttBarConfig.label"
+              :bars="[activity]"
+            />
+            <!-- <g-gantt-row
+              v-for="bar in row2BarList"
+              :key="bar.ganttBarConfig.id"
               :label="bar.ganttBarConfig.label"
-              <template #tab-content>
-                <div class="tab-content">
-                  <p>X: {{ bar.myBeginDate }}</p>
-                  <p>Y: {{ bar.ganttBarConfig.label }}</p>
-                </div>
-              </template>
-            </g-gantt-timeline>
-          </g-gantt-row>
-        </g-gantt-chart>
+              :bars="[bar]"
+            /> -->
+          </g-gantt-chart>
+        </div>
 
         <!-- Button Add Delete -->
         <div class="relative flex items-center justify-start mt-5">
@@ -63,17 +61,85 @@
       </div>
     </div>
 
-    <!-- <button @click="handleRowScroll()">ส่งข้อมูลไป</button> -->
+    <button @click="callParentFunction()">ส่งข้อมูลไป</button>
   </div>
 </template>
 
 <script>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, defineEmits } from "vue";
 
 export default {
+  props: {
+    setData: String,
+  },
   name: "TimeLinePage",
   components: {},
-  setup() {
+  setup(props) {
+    console.log("first", props.setData);
+    // const buttonClick = () => {
+    //   emit("setData", "Hi");
+    // };
+    const transformedData = ref([]);
+
+    const handleRowScroll = (event) => {
+      const barElement = event.target;
+      const barWidth = 100; // กำหนดความกว้างของแถบใน pixel
+      const scrollLeft = barElement.scrollLeft;
+      const visibleBars = Math.floor(scrollLeft / barWidth);
+
+      // ค้นหาแถบที่มีค่า scrollLeft อยู่ในช่วงที่เหมาะสมและแสดงผลข้อมูล
+      if (visibleBars >= 0 && visibleBars < transformedData.value.length) {
+        const visibleBar = transformedData.value[visibleBars];
+        console.log("Visible Bar Data:", visibleBar);
+      }
+    };
+
+    const handleScrollingBarClick = () => {
+      transformedData.value.forEach((activity) => {
+        console.log("Activity:", activity);
+      });
+    };
+
+    onMounted(() => {
+      barList.value.forEach((entity) => {
+        entity.activities.forEach((activity) => {
+          transformedData.value.push({
+            myBeginDate: activity.activity_start_datetime,
+            myEndDate: activity.activity_end_datetime,
+            ganttBarConfig: {
+              id: entity.entity_id + "-" + activity.activity_name,
+              label: activity.activity_name,
+              style: {
+                background: activity.background,
+                borderRadius: activity.borderRadius,
+                color: activity.color,
+              },
+            },
+            location: {
+              latitude: parseFloat(
+                activity.activity_latlon.split(",")[0].trim()
+              ),
+              longitude: parseFloat(
+                activity.activity_latlon.split(",")[1].trim()
+              ),
+            },
+          });
+        });
+      });
+
+      addRow();
+      deleteRow();
+      callParentFunction();
+    });
+
+    const emits = defineEmits(["updateData"]);
+    console.log("emit", emits);
+
+    const callParentFunction = () => {
+      console.log('first')
+      emits.updateData("kimmmytest");
+    };
+
     const row1BarList = ref([
       {
         myBeginDate: "2021-07-12 13:00",
@@ -96,30 +162,53 @@ export default {
       },
     ]);
 
-    const handleRowScroll = (event) => {
-      const barElement = event.target;
-      const barWidth = 100; // กำหนดความกว้างของแถบใน pixel
-      const scrollLeft = barElement.scrollLeft;
-      const visibleBars = Math.floor(scrollLeft / barWidth);
+    const barList = ref([
+      {
+        entity_name: "person_name",
+        entity_id: "P0001",
+        entity_type: "person",
+        activities: [
+          {
+            activity_name: "ต่อบัตรประชาชน",
+            activity_address: "ต.สามพราน อ.เมือง จ.นครปฐม",
+            activity_latlon: "100.00, 99.00",
+            activity_start_datetime: "2021-07-12 13:00",
+            activity_end_datetime: "2021-07-14 15:00",
+            background: "#e09b69",
+            borderRadius: "20px",
+            color: "white",
+          },
+          {
+            activity_name: "ทำใบขับขี่",
+            activity_address: "ต.สามพราน อ.เมือง จ.นครปฐม",
+            activity_latlon: "100.00, 96.00",
+            activity_start_datetime: "2021-07-12 13:00",
+            activity_end_datetime: "2021-07-13 19:00",
+            background: "#e09b69",
+            borderRadius: "20px",
+            color: "white",
+          },
+        ],
+      },
+    ]);
 
-      // ค้นหาแถบที่มีค่า scrollLeft อยู่ในช่วงที่เหมาะสมและแสดงผลข้อมูล
-      if (visibleBars >= 0 && visibleBars < row1BarList.value.length) {
-        const visibleBar = row1BarList.value[visibleBars];
-        console.log("Visible Bar Data:", visibleBar);
-      }
-    };
-    // const handleRowScroll = (event) => {
-    //   const barElement = event.target;
-    //   const scrollLeft = barElement.scrollLeft;
+    const scrollingRowConfig = ref([
+      {
+        myBeginDate: "2021-07-11 00:00",
+        myEndDate: "2021-07-11 18:00",
+        ganttBarConfig: {
+          id: "scrolling-row",
+          label: "Scrolling Row",
+          style: {
+            background: "rgb(222, 59, 38)",
+            width: "200px",
+            borderRadius: "10px",
+            color: "white",
+          },
+        },
+      },
+    ]);
 
-    //   console.log("Scroll Left:", scrollLeft);
-    //   // ค้นหาแถบที่มีค่า scrollLeft อยู่ในช่วงที่เหมาะสมและแสดงผล label
-    // };
-
-    onMounted(() => {
-      addRow();
-      deleteRow();
-    });
     // add row del row
     const row2BarList = ref([]);
     const addRow = () => {
@@ -133,7 +222,7 @@ export default {
             // arbitrary CSS styling for your bar
             background: "#e09b69",
             borderRadius: "20px",
-            color: "black",
+            color: "white",
           },
         },
       });
@@ -146,18 +235,45 @@ export default {
     return {
       row1BarList,
       row2BarList,
+      barList,
       addRow,
       deleteRow,
       handleRowScroll,
+      transformedData,
+      scrollingRowConfig,
+      handleScrollingBarClick,
+      props,
+      emits,
+      callParentFunction,
     };
   },
 };
 </script>
 
 <style scoped>
-#ganttastic-wrapper {
-  height: 35vh;
-  overflow-y: auto;
+.g-gantt-chart-container {
+  width: 100% !important;
+  display: flex;
+  flex-direction: column;
+}
+.g-gantt-chart {
+  width: 700px !important;
+  border: 1px solid #eaeaea;
+  box-sizing: border-box;
+  background: #fff;
+  padding-bottom: 34px;
+}
+.g-gantt-row {
+  height: 45px !important;
+  border: 1px solid #eaeaea;
+}
+.g-gantt-timeaxi-empty-space {
+  min-width: 200px;
+  min-height: 100%;
+  background: #e0e0e0;
+  z-index: 5;
+  left: 0;
+  position: sticky;
 }
 .title__page {
   font-size: 1.5rem;
@@ -165,19 +281,8 @@ export default {
   font-weight: 500;
   line-height: 1.2;
 }
-.g-gantt-chart {
-  /* width: 660px !important; */
-  height: 232px !important;
-}
-.container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  height: 330px;
-}
-
 .text {
-  margin-right: 10px; /* ระยะห่างด้านขวา */
-  margin-bottom: 10px; /* ระยะห่างด้านล่าง */
+  margin-right: 10px;
+  margin-bottom: 10px;
 }
 </style>

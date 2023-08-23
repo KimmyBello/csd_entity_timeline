@@ -74,18 +74,15 @@ export default {
         .map("mapid", {
           zoomControl: false,
         })
-        .setView([28.538336, -81.379234], 10);
+        .setView([51.505, -0.09], 13);
 
       // add tile layers
       leaflet
         .tileLayer(
-          `https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=${process.env.VUE_APP_API_KEY}`,
+          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           {
-            maxZoom: 18,
-            id: "mapbox/streets-v11",
-            tileSize: 512,
-            zoomOffset: -1,
-            accessToken: process.env.VUE_APP_API_KEY,
+            maxZoom: 19,
+            attribution: "© OpenStreetMap",
           }
         )
         .addTo(map);

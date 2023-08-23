@@ -1,5 +1,5 @@
 <template>
-  <div
+  <!-- <div
     class="h-screen absolute w-full z-10 flex justify-center items-start pt-[125px] bg-black/50"
   >
     <div class="flex flex-col bg-white w-[80%] sm:w-[450px] px-6 py-4 rounded-md">
@@ -15,7 +15,8 @@
         Close
       </button>
     </div>
-  </div>
+  </div> -->
+  <div></div>
 </template>
 
 <script>

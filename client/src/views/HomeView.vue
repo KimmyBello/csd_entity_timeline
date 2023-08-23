@@ -4,7 +4,7 @@
       <div class="grid grid-rows-3 grid-flow-col gap-4">
         <div class="col-span-2 pb-5">
           <div class="box-content h-96 bg-white drop-shadow-md px-8 py-8">
-            <TimeLinePage />
+            <TimeLinePage :setData="setData" @updateData="updateData"/>
           </div>
         </div>
 
@@ -29,21 +29,26 @@ export default {
   setup() {
     onMounted(() => {
       doSomethingInParent();
+      updateData();
       // console.log("object :>> ", doSomethingInParent);
       // console.log("row :>> ", row1BarList);
+      console.log('object :>> ', setData);
     });
-
-    const doSomethingInParent = () => {
-      console.log("Function executed in parent component");
-    };
 
     const row1BarList = ref([
       {
-        myBeginDate: "2021-07-13 13:00",
+        myBeginDate: "2021-07-12 13:00",
         myEndDate: "2021-07-14 19:00",
         ganttBarConfig: {
           id: "unique-id-1",
           label: "Lorem ipsum dolor",
+          // immobile: true,
+          style: {
+            // arbitrary CSS styling for your bar
+            background: "#e09b69",
+            borderRadius: "20px",
+            color: "black",
+          },
         },
         location: {
           latitude: 13.7563,
@@ -52,14 +57,23 @@ export default {
       },
     ]);
 
-    // const getLocations = () => {
-    //   return row1BarList.value.map((row) => row.location);
-    // };
+    const doSomethingInParent = () => {
+      console.log("Function executed in parent component");
+    };
+    
+    // const setData = ref([]);
+    const setData = ref("kimmy");
+
+    const updateData = (newData) => {
+      setData.value = newData;
+      console.log('kimmy :>> ', setData.value);
+    };
 
     return {
       row1BarList,
       doSomethingInParent,
-      // getLocations,
+      setData,
+      updateData,
     };
   },
 };
