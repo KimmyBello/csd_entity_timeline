@@ -79,6 +79,7 @@ export default {
     // const buttonClick = () => {
     //   emit("setData", "Hi");
     // };
+    
     const transformedData = ref([]);
 
     const handleRowScroll = (event) => {
