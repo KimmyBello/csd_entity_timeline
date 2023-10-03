@@ -1,7 +1,6 @@
 <template>
   <div class="h-80">
     <p class="title__page">Activities Map</p>
-    <!-- <p>ข้อมูลที่รับมาจากลูก A: {{ receivedRow1BarList }}</p> -->
     <GeoErrorModal
       v-if="geoError"
       :geoErrorMsg="geoErrorMsg"
@@ -17,201 +16,101 @@
       :searchResults="searchResults"
       class="w-full md:w-auto absolute md:top-[40px] md:left-[60px] z-[2]"
     />
-    <div id="mapid" class="h-full z-[1]"></div>
+    <div id="map" class="h-full z-[1]"></div>
+    <!-- <p>ข้อมูลที่รับมาจากลูก A: {{ updatedDataProp }}</p> -->
   </div>
 </template>
 
 <script>
 import leaflet from "leaflet";
-import { onMounted, ref } from "vue";
+import { onMounted, toRefs, ref, watchEffect } from "vue";
 import GeoErrorModal from "../components/GeoErrorModal.vue";
 import MapFeatures from "../components/MapFeatures.vue";
 
 export default {
   props: {
-    locations: Array,
+    updatedDataProp: Array,
+    // updateDataMapProp: Array,
+    // updatedDataProp: {
+    //   type: Array,
+    //   required: true,
+    // },
   },
   name: "MapPage",
   components: { GeoErrorModal, MapFeatures },
-  // setup() {
-  //   let map;
-  //   onMounted(() => {
-  //     // สร้าง Layer แผนที่
-  //     console.log("row1BarList", this.message);
-  //     map = leaflet
-  //       .map("mapid", {
-  //         zoomControl: false,
-  //       })
-  //       .setView([28.538336, -81.379234], 10);
-
-  //     // add tile layers
-  //     leaflet
-  //       .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  //         attribution: "© OpenStreetMap contributors",
-  //       })
-  //       .addTo(map);
-  //   });
-
-  //   // แสดง Marker จากข้อมูลใน row1BarList
-  //   // this.row1BarList.value.forEach((bar) => {
-  //   //   const { latitude, longitude } = bar.location;
-  //   //   leaflet.marker([latitude, longitude])
-  //   //     .addTo(map)
-  //   //     .bindPopup(bar.ganttBarConfig.label); // แสดง Label บน Marker
-  //   // });
-
-  //   return {};
-  // },
-  setup() {
-    // const callParentFunction = () => {
-    //   props.locations(); // เรียกใช้งานฟังก์ชั่นจากคอมโพเนนต์แม่
-    // };
-
-    let map;
+  setup(props) {
+    const { updatedDataProp } = toRefs(props);
+    const markers = ref([]);
     onMounted(() => {
-      // init map
-      map = leaflet
-        .map("mapid", {
-          zoomControl: false,
-        })
-        .setView([51.505, -0.09], 13);
+      const mapElement = document.getElementById("map");
+      if (mapElement) {
+        const leafletMap = leaflet
+          .map(mapElement)
+          .setView([13.7563, 100.5018], 10);
 
-      // add tile layers
-      leaflet
-        .tileLayer(
-          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          {
-            maxZoom: 19,
-            attribution: "© OpenStreetMap",
-          }
-        )
-        .addTo(map);
+        leaflet
+          .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors",
+          })
+          .addTo(leafletMap);
 
-      map.on("moveend", () => {
-        closeSearchResults();
-      });
+        // watchEffect(() => {
+        //   updatedDataProp.value.forEach((location) => {
+        //     const { latitude, longitude } = location;
+        //     leaflet
+        //       .marker([latitude, longitude])
+        //       .addTo(leafletMap)
+        //       .bindPopup("<b>Hello world!</b><br>I am a popup.")
+        //       .openPopup();
+        //   });
+        // });
 
-      // get users location
-      getGeolocation();
+
+        // สร้าง marker เมื่อค่าเริ่มต้นถูกนำเข้า
+        // updatedDataProp.value.forEach((location) => {
+        //   const { latitude, longitude } = location;
+        //   const marker = createMarker(latitude, longitude);
+        //   markers.push(marker);
+        //   marker.addTo(leafletMap);
+        // });
+
+        // ตรวจสอบการเปลี่ยนแปลงใน updatedDataProp
+        watchEffect(() => {
+          updatedDataProp.value.forEach((location) => {
+            // console.log("index :>> ", location);
+            const { latitude, longitude } = location;
+            leaflet
+              .marker([latitude, longitude])
+              .addTo(leafletMap)
+              .bindPopup("<b>Hello world!</b><br>I am a popup.")
+              .openPopup();
+
+            // เปรียบเทียบค่าระหว่าง updatedDataProp กับ updateDataMapProp
+            // if (
+            //   JSON.stringify(location) ===
+            //   JSON.stringify(updateDataMapProp.value[index])
+            // ) {
+            //   // ถ้าค่าเท่ากันให้ใช้สีเดิม
+            //   markers[index].setStyle({ color: "blue" });
+            // } else {
+            //   // ถ้าค่าไม่เท่ากันให้เปลี่ยนสีเป็นสีอื่น
+            //   markers[index].setStyle({ color: "red" });
+            // }
+          });
+        });
+
+        // function createMarker(latitude, longitude) {
+        //   return leaflet
+        //     .marker([latitude, longitude])
+        //     .addTo(leafletMap)
+        //     .bindPopup("<b>Hello world!</b><br>I am a popup.")
+        //     .openPopup();
+        // }
+      }
     });
 
-    const coords = ref(null);
-    const fetchCoords = ref(null);
-    const geoMarker = ref(null);
-    const geoError = ref(null);
-    const geoErrorMsg = ref(null);
-
-    // const receivedRow1BarList = inject("row1BarListForChildB", ref([]));
-
-    const getGeolocation = () => {
-      // if function is called, only run if we dont have coords
-      if (!coords.value) {
-        // check to see if we have coods in session sotrage
-        if (sessionStorage.getItem("coords")) {
-          coords.value = JSON.parse(sessionStorage.getItem("coords"));
-          plotGeoLocation(coords.value);
-          return;
-        }
-
-        // else get coords from geolocation API
-        fetchCoords.value = true;
-        navigator.geolocation.getCurrentPosition(setCoords, getLocError);
-        return;
-      }
-
-      // otherwise, remove location
-      coords.value = null;
-      sessionStorage.removeItem("coords");
-      map.removeLayer(geoMarker.value);
-    };
-
-    const setCoords = (pos) => {
-      // stop fetching
-      fetchCoords.value = null;
-
-      // set coords in session storage
-      const setSessionCoords = {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-      };
-      sessionStorage.setItem("coords", JSON.stringify(setSessionCoords));
-
-      // set ref coords value
-      coords.value = setSessionCoords;
-
-      plotGeoLocation(coords.value);
-    };
-
-    const getLocError = (error) => {
-      // stop fetching coords
-      fetchCoords.value = null;
-      geoError.value = true;
-      geoErrorMsg.value = error.message;
-    };
-
-    const plotGeoLocation = (coords) => {
-      // create custom marker
-      const customMarker = leaflet.icon({
-        iconUrl: require("../assets/map-marker-red.svg"),
-        iconSize: [35, 35],
-      });
-
-      // create new marker with coords and custom marker
-      geoMarker.value = leaflet
-        .marker([coords.lat, coords.lng], { icon: customMarker })
-        .addTo(map);
-
-      // set map view to current location
-      map.setView([coords.lat, coords.lng], 10);
-    };
-
-    const resultMarker = ref(null);
-    const plotResult = (coords) => {
-      // If there is already a marker, remove it. Only allow 1
-      if (resultMarker.value) {
-        map.removeLayer(resultMarker.value);
-      }
-      const customMarker = leaflet.icon({
-        iconUrl: require("../assets/map-marker-blue.svg"),
-        iconSize: [35, 35], // size of the icon
-      });
-      resultMarker.value = leaflet
-        .marker([coords.coordinates[1], coords.coordinates[0]], {
-          icon: customMarker,
-        })
-        .addTo(map);
-      map.setView([coords.coordinates[1], coords.coordinates[0]], 13);
-    };
-
-    const removeResult = () => {
-      map.removeLayer(resultMarker.value);
-    };
-
-    const closeGeoError = () => {
-      geoErrorMsg.value = null;
-      geoError.value = null;
-    };
-
-    const searchResults = ref(null);
-    const toggleSearchResults = () => {
-      searchResults.value = !searchResults.value;
-    };
-    const closeSearchResults = () => {
-      searchResults.value = null;
-    };
-
     return {
-      geoError,
-      closeGeoError,
-      geoErrorMsg,
-      fetchCoords,
-      coords,
-      getGeolocation,
-      plotResult,
-      searchResults,
-      toggleSearchResults,
-      closeSearchResults,
-      removeResult,
+      markers,
     };
   },
 };
