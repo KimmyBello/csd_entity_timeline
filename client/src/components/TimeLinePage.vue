@@ -2,12 +2,50 @@
   <div class="h-96 bg-white px-8 py-8">
     <p class="title__page">Activities Timeline</p>
     <div class="grid grid-cols-4 gap-4">
-      <div class="col-span-1 container"></div>
+      <div class="col-span-1 container">
+        <div v-if="clickedBarScrollData">
+          <pre>{{ clickedBarScrollData }}</pre>
+        </div>
+      </div>
 
       <div class="col-span-3">
         <div class="g-gantt-chart-container">
-          <div class="gstc">
-            <div class="gstc-wrapper" ref="gstcElement"></div>
+          <g-gantt-chart
+            chart-start="2021-07-11 12:00"
+            chart-end="2021-07-20 12:00"
+            precision="day"
+            bar-start="myBeginDate"
+            bar-end="myEndDate"
+            width="100%"
+            :grid="grid"
+          >
+            <g-gantt-row
+              v-for="activity in transformedData"
+              :key="activity.ganttBarConfig.id"
+              :label="activity.ganttBarConfig.label"
+              :bars="[activity]"
+              @click="handleRowScroll(activity)"
+            />
+          </g-gantt-chart>
+        </div>
+
+        <!-- Button Add Delete -->
+        <div class="relative flex items-center justify-start mt-5">
+          <div class="relative p-3">
+            <div
+              @click="addRow"
+              class="pointer-events-auto rounded-md bg-green-700 px-6 py-4 text-white hover:bg-green-500 font-semibold"
+            >
+              addRow
+            </div>
+          </div>
+          <div class="relative p-3">
+            <div
+              @click="deleteRow"
+              class="pointer-events-auto rounded-md bg-green-700 px-6 py-4 text-white hover:bg-green-500 font-semibold"
+            >
+              deleteRow
+            </div>
           </div>
         </div>
       </div>
@@ -16,304 +54,184 @@
 </template>
 
 <script>
-import GSTC from "gantt-schedule-timeline-calendar/dist/gstc.wasm.esm.min.js";
-import { Plugin as TimelinePointer } from "gantt-schedule-timeline-calendar/dist/plugins/timeline-pointer.esm.min.js";
-import { Plugin as Selection } from "gantt-schedule-timeline-calendar/dist/plugins/selection.esm.min.js";
-import { Plugin as ItemResizing } from "gantt-schedule-timeline-calendar/dist/plugins/item-resizing.esm.min.js";
-import { Plugin as ItemMovement } from "gantt-schedule-timeline-calendar/dist/plugins/item-movement.esm.min.js";
-import { Plugin as Bookmarks } from "gantt-schedule-timeline-calendar/dist/plugins/time-bookmarks.esm.min.js";
-import "gantt-schedule-timeline-calendar/dist/style.css";
-import { ref, onMounted, onBeforeUnmount } from "vue";
-// import { ref, onMounted } from "vue";
+import { onMounted, ref } from "vue";
 
-const itemsFromDB = ref([
-  {
-    entities: [
+export default {
+  props: {
+    setData: String,
+    updateData: Function,
+    updateDataMap: Function,
+  },
+  name: "TimeLinePage",
+  setup(props) {
+    const transformedData = ref([]);
+    const locationData = ref([]);
+
+    const clickedBarScrollData = ref(null);
+
+    // callSendData to Home
+    const callParentFunction = () => {
+      const newData = locationData.value;
+      props.updateData(newData);
+    };
+
+    const handleRowScroll = (event) => {
+      const barElement = event;
+      console.log("barElement :>> ", barElement);
+    };
+
+    onMounted(() => {
+      barList.value.forEach((entity) => {
+        entity.activities.forEach((activity) => {
+          transformedData.value.push({
+            myBeginDate: activity.activity_start_datetime,
+            myEndDate: activity.activity_end_datetime,
+            ganttBarConfig: {
+              id: entity.entity_id + "-" + activity.activity_name,
+              label: activity.activity_name,
+              style: {
+                background: activity.background,
+                borderRadius: activity.borderRadius,
+                color: activity.color,
+              },
+            },
+            location: {
+              latitude: parseFloat(
+                activity.activity_latlon.split(",")[0].trim()
+              ),
+              longitude: parseFloat(
+                activity.activity_latlon.split(",")[1].trim()
+              ),
+            },
+          });
+        });
+      });
+
+      barList.value.forEach((entity) => {
+        entity.activities.forEach((activity) => {
+          locationData.value.push({
+            latitude: parseFloat(activity.activity_latlon.split(",")[0].trim()),
+            longitude: parseFloat(
+              activity.activity_latlon.split(",")[1].trim()
+            ),
+          });
+        });
+      });
+
+      callParentFunction();
+      addRow();
+      deleteRow();
+    });
+
+    const barList = ref([
       {
-        entity_name: "วีรศักดิ์  ทะชัย",
-        entity_id: "3570300029314",
+        entity_name: "person_name",
+        entity_id: "P0001",
         entity_type: "person",
         activities: [
           {
-            activity_name: "ทำบัตรประชาชน",
-            activity_date: "2021-01-11",
-            activity_place: "คลองหลวง ปทุมธานี",
-            lat: 14.065999984741211,
-            lng: 100.60700225830078,
+            activity_name: "ต่อบัตรประชาชน",
+            activity_address: "ต.สามพราน อ.เมือง จ.นครปฐม",
+            activity_latlon: "13.7563, 100.5018",
+            activity_start_datetime: "2021-07-12 13:00",
+            activity_end_datetime: "2021-07-14 15:00",
+            background: "rgb(242, 132, 15)",
+            borderRadius: "10px",
+            color: "white",
           },
           {
-            activity_name: "regist_house",
-            activity_date: "2021-01-11",
-            activity_place: " ",
-            lat: null,
-            lng: null,
+            activity_name: "ทำใบขับขี่",
+            activity_address: "ต.สามพราน อ.เมือง จ.นครปฐม",
+            activity_latlon: "13.8550, 100.5018",
+            activity_start_datetime: "2021-07-14 13:00",
+            activity_end_datetime: "2021-07-16 19:00",
+            background: "rgb(222, 59, 38)",
+            borderRadius: "10px",
+            color: "white",
+          },
+          {
+            activity_name: "ผ่านด่าน",
+            activity_address: "ต.สามพราน อ.เมือง จ.นครปฐม",
+            activity_latlon: "13.9550, 105.5018",
+            activity_start_datetime: "2021-07-18 13:00",
+            activity_end_datetime: "2021-07-19 19:00",
+            background: "rgb(94, 255, 173)",
+            borderRadius: "10px",
+            color: "white",
           },
           {
             activity_name: "สมัครงาน",
-            activity_date: "2021-01-12",
-            activity_place: "โค้ดดิ้ง ฮับ (สามเสนนอก ห้วยขวาง กรุงเทพมหานคร)",
-            lat: 13.795999526977539,
-            lng: 100.5790023803711,
-          },
-          {
-            activity_name: "สมัครงาน",
-            activity_date: "2023-01-12",
-            activity_place: "โค้ดดิ้ง ฮับ (สามเสนนอก ห้วยขวาง กรุงเทพมหานคร)",
-            lat: 13.795999526977539,
-            lng: 100.5790023803711,
+            activity_address: "ต.สามพราน อ.เมือง จ.นครปฐม",
+            activity_latlon: "13.9550, 105.5018",
+            activity_start_datetime: "2021-07-19 13:00",
+            activity_end_datetime: "2021-07-20 19:00",
+            background: "rgb(242, 132, 15)",
+            borderRadius: "10px",
+            color: "white",
           },
         ],
       },
-    ],
-  },
-]);
+    ]);
 
-// สร้างฟังก์ชันเพื่อแปลงข้อมูล Item
-function convertItemsFromDB(itemsFromDB) {
-  const convertedItems = [];
-  let itemId = 1; // กำหนด ID เริ่มต้น
-  itemsFromDB.value.forEach((entity) => {
-    entity.entities.forEach((entityInfo) => {
-      entityInfo.activities.forEach((activity) => {
-        const convertedItem = {
-          id: itemId.toString(),
-          label: activity.activity_name,
-          rowId: itemId.toString(),
-          time: {
-            start: GSTC.api
-              .date(activity.activity_date)
-              .startOf("day")
-              .valueOf(),
-            end: GSTC.api.date(activity.activity_date).endOf("day").valueOf(),
+    const barScroll = ref([
+      {
+        myBeginDate: "2021-07-11 10:00",
+        myEndDate: "2021-07-12 09:00",
+        ganttBarConfig: {
+          id: "scrolling-row",
+          label: "Scroll",
+          style: {
+            background: "rgb(46, 116, 163)",
+            borderRadius: "10px",
+            color: "white",
           },
-        };
-        convertedItems.push(convertedItem);
-        itemId++; // เพิ่มค่า ID สำหรับรายการถัดไป
-      });
-    });
-  });
-  return convertedItems;
-}
-const convertedItems = convertItemsFromDB(itemsFromDB);
-console.log("item", convertedItems);
-
-// สร้างฟังก์ชันเพื่อแปลงข้อมูล Column
-function convertColumnFromDB(itemsFromDB) {
-  const convertedColumns = [];
-  for (const item of itemsFromDB.value) {
-    // สร้างข้อมูลแต่ละรายการจาก itemsFromDB
-    const convertedColumn = {
-      id: item.entities[0].entity_id, // ใช้ entity_id เป็น id
-      label: item.entities[0].entity_name, // ใช้ entity_name เป็น label
-      data: ({ row }) => GSTC.api.sourceID(row.id), // show original id (not internal GSTCID)
-      sortable: ({ row }) => Number(GSTC.api.sourceID(row.id)), // sort by id converted to number
-      width: 80,
-      header: {
-        content: "ID",
+        },
+        location: {
+          latitude: "13.955",
+          longitude: "105.5018",
+        },
       },
-    };
-    convertedColumns.push(convertedColumn);
-  }
+    ]);
 
-  return convertedColumns;
-}
-const convertedColumn = convertColumnFromDB(itemsFromDB);
-console.log(convertedColumn);
-
-// helper functions
-function generateItems() {
-  const items = {};
-
-  // เรียกใช้ค่า convertedItems ที่คุณสร้างขึ้น
-  const convertedItems = convertItemsFromDB(itemsFromDB);
-
-  // เริ่มต้นตัวแปร rowId และ i ที่ 0
-  let rowId = 0;
-  let i = 0;
-
-  // วนลูปผ่าน convertedItems
-  for (const convertedItem of convertedItems) {
-    // สร้าง id ในรูปแบบ GSTCID
-    const id = GSTC.api.GSTCID(convertedItem.id);
-
-    // กำหนดข้อมูลให้กับ items จาก convertedItem
-    items[id] = {
-      id,
-      label: convertedItem.label,
-      rowId: GSTC.api.GSTCID(rowId.toString()), // ใช้ rowId แบบ GSTCID
-      time: {
-        start: convertedItem.time.start,
-        end: convertedItem.time.end,
-      },
-    };
-
-    // เพิ่ม rowId และ i ในรายการถัดไป
-    rowId++;
-    i++;
-
-    // หยุดการวนลูปหาก i เกิน 100
-    if (i >= 100) {
-      break;
-    }
-  }
-
-  return items;
-}
-function generateRows() {
-  /**
-   * @type { import("gantt-schedule-timeline-calendar").Rows }
-   */
-  const rows = {};
-  for (let i = 0; i < 100; i++) {
-    const id = GSTC.api.GSTCID(i.toString());
-    rows[id] = {
-      id,
-      label: `Row ${i}`,
-    };
-  }
-  return rows;
-}
-
-// function generateRows() {
-//   /**
-//    * @type { import("gantt-schedule-timeline-calendar").Rows }
-//    */
-//   const rows = {};
-//   const convertedColumns = convertColumnFromDB(itemsFromDB);
-//   let i = 0;
-
-//   console.log('convertedColumnsx', convertedColumns)
-
-//   for (const convertedColumn of convertedColumns) {
-//     const id = GSTC.api.GSTCID(convertedColumn.id);
-
-//     rows[id] = {
-//       id,
-//       label: convertedColumn.label,
-//     };
-
-//     i++;
-//   }
-//   return rows;
-// }
-
-// main component
-export default {
-  name: "GSTC",
-  setup() {
-    const state = ref(null);
-    const gstc = ref(null);
-    const gstcElement = ref(null);
-
-    onMounted(() => {
-      /**
-       * @type { import("gantt-schedule-timeline-calendar").Config }
-       */
-      const config = {
-        licenseKey:
-          "====BEGIN LICENSE KEY====\nXOfH/lnVASM6et4Co473t9jPIvhmQ/l0X3Ewog30VudX6GVkOB0n3oDx42NtADJ8HjYrhfXKSNu5EMRb5KzCLvMt/pu7xugjbvpyI1glE7Ha6E5VZwRpb4AC8T1KBF67FKAgaI7YFeOtPFROSCKrW5la38jbE5fo+q2N6wAfEti8la2ie6/7U2V+SdJPqkm/mLY/JBHdvDHoUduwe4zgqBUYLTNUgX6aKdlhpZPuHfj2SMeB/tcTJfH48rN1mgGkNkAT9ovROwI7ReLrdlHrHmJ1UwZZnAfxAC3ftIjgTEHsd/f+JrjW6t+kL6Ef1tT1eQ2DPFLJlhluTD91AsZMUg==||U2FsdGVkX1/SWWqU9YmxtM0T6Nm5mClKwqTaoF9wgZd9rNw2xs4hnY8Ilv8DZtFyNt92xym3eB6WA605N5llLm0D68EQtU9ci1rTEDopZ1ODzcqtTVSoFEloNPFSfW6LTIC9+2LSVBeeHXoLEQiLYHWihHu10Xll3KsH9iBObDACDm1PT7IV4uWvNpNeuKJc\npY3C5SG+3sHRX1aeMnHlKLhaIsOdw2IexjvMqocVpfRpX4wnsabNA0VJ3k95zUPS3vTtSegeDhwbl6j+/FZcGk9i+gAy6LuetlKuARjPYn2LH5Be3Ah+ggSBPlxf3JW9rtWNdUoFByHTcFlhzlU9HnpnBUrgcVMhCQ7SAjN9h2NMGmCr10Rn4OE0WtelNqYVig7KmENaPvFT+k2I0cYZ4KWwxxsQNKbjEAxJxrzK4HkaczCvyQbzj4Ppxx/0q+Cns44OeyWcwYD/vSaJm4Kptwpr+L4y5BoSO/WeqhSUQQ85nvOhtE0pSH/ZXYo3pqjPdQRfNm6NFeBl2lwTmZUEuw==\n====END LICENSE KEY====",
-        plugins: [
-          TimelinePointer(),
-          Selection(),
-          ItemResizing(),
-          ItemMovement(),
-          Bookmarks(),
-        ],
-        list: {
-          columns: {
-            data: {
-              // [GSTC.api.GSTCID("id")]: {
-              //   id: GSTC.api.GSTCID("id"),
-              //   width: 60,
-              //   data: ({ row }) => GSTC.api.sourceID(row.id),
-              //   header: {
-              //     content: "ID",
-              //   },
-              // },
-              [GSTC.api.GSTCID("label")]: {
-                id: GSTC.api.GSTCID("label"),
-                width: 200,
-                data: "label",
-                header: {
-                  content: "Label",
-                },
-              },
-            },
+    const row2BarList = ref([]);
+    const addRow = () => {
+      row2BarList.value.push({
+        myBeginDate: "2021-07-12 14:00",
+        myEndDate: "2021-07-13 18:00",
+        ganttBarConfig: {
+          id: "unique-id-" + (row2BarList.value.length + 1),
+          label: "New Bar " + (row2BarList.value.length + 1),
+          style: {
+            // arbitrary CSS styling for your bar
+            background: "#e09b69",
+            borderRadius: "20px",
+            color: "white",
           },
-          rows: generateRows(),
         },
-        chart: {
-          items: generateItems(),
-        },
-      };
-
-      // state = GSTC.api.stateFromConfig(config);
-      state.value = GSTC.api.stateFromConfig(config);
-
-      gstc.value = GSTC({
-        element: gstcElement.value,
-        state: state.value,
       });
-    });
-
-    onBeforeUnmount(() => {
-      if (gstc.value) gstc.value.destroy();
-    });
-
-    function updateFirstRow() {
-      state.value.update(`config.list.rows.${GSTC.api.GSTCID("0")}`, (row) => {
-        row.label = "Changed dynamically";
-        return row;
-      });
-    }
-
-    // log data from click row
-    const onItemClick = (ev) => {
-      const itemElement = ev.target.closest(
-        ".gstc__chart-timeline-items-row-item-label"
-      );
-      console.log("itemElement", itemElement);
-      const itemId = itemElement;
-      console.log("itemId :>> ", itemId);
-      const item = GSTC.api.getItem(itemId);
-      console.log("Item click from template", item);
     };
 
-    function changeZoomLevel() {
-      state.value.update("config.chart.time.zoom", 21);
-    }
+    const deleteRow = () => {
+      row2BarList.value.pop();
+    };
 
     return {
-      gstcElement,
-      updateFirstRow,
-      changeZoomLevel,
-      onItemClick,
-      state,
-      gstc,
-      itemsFromDB,
-      convertItemsFromDB,
-      convertColumnFromDB,
-      // rowsFromDB,
-      itemsFromDB,
-      // columnsFromDB,
-      // fromArray,
-      // GSTCID
+      row2BarList,
+      barList,
+      addRow,
+      deleteRow,
+      transformedData,
+      barScroll,
+      locationData,
+      handleRowScroll,
+      callParentFunction,
+      clickedBarScrollData,
     };
   },
 };
 </script>
 
 <style scoped>
-.gstc {
-  height: 250px !important;
-}
-.gstc-component {
-  margin: 0;
-  padding: 0;
-}
-.toolbox {
-  padding: 10px;
-}
 .g-gantt-chart-container {
   width: 100% !important;
   display: flex;
